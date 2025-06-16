@@ -10,24 +10,23 @@ import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
 
 const form = document.querySelector('.form');
-const loadButton = document.querySelector('.load-button');
+const loadBtn = document.querySelector('.load-button');
 
-let currentPage = 1;
 let perPage = 15;
 let currentQuery = '';
+let currentPage = 1;
 
-function hideLoadButton() {
-  if (loadButton) {
-    loadButton.classList.add('hidden');
-  }
+function hideLoadBtn() {
+  loadBtn.classList.add('hidden');
 }
 
-function showLoadButton() {
-  if (loadButton) {
-    loadButton.classList.remove('hidden');
-  }
+function showLoadBtn() {
+  loadBtn.classList.remove('hidden');
 }
 
+function getTotalPages(totalHits, perPage) {
+  return Math.ceil(totalHits / perPage);
+}
 form.addEventListener('submit', async event => {
   event.preventDefault();
 
@@ -42,16 +41,17 @@ form.addEventListener('submit', async event => {
     return;
   }
 
-  currentPage = 1;
   currentQuery = query;
+  currentPage = 1;
 
   clearGallery();
   showLoader();
-  hideLoadButton();
+  hideLoadBtn();
 
   try {
     const data = await getImagesByQuery(currentQuery, currentPage, perPage);
-    const { hits } = data;
+    const { hits, totalHits } = data;
+
     if (hits.length === 0) {
       iziToast.info({
         title: 'Info',
@@ -59,31 +59,25 @@ form.addEventListener('submit', async event => {
           'Sorry, there are no images matching your search query. Please try again!',
         position: 'topRight',
       });
-      hideLoadButton();
+      hideLoadBtn();
     } else {
       createGallery(hits);
-      showLoadButton();
+      showLoadBtn();
     }
-
-    const totalPages = Math.ceil(data.totalHits / perPage);
-    if (currentPage >= totalPages) {
-      hideLoadButton();
+    if (currentPage >= getTotalPages(totalHits, perPage)) {
+      hideLoadBtn();
     }
   } catch (error) {
-    console.error('Error fetching images:', error);
     iziToast.error({
       title: 'Error',
-      message:
-        error.response?.data?.message ||
-        'Something went wrong. Please try again later.',
+      message: 'Something went wrong. Please try again later.',
       position: 'topRight',
     });
   } finally {
     hideLoader();
   }
 });
-
-loadButton.addEventListener('click', async () => {
+loadBtn.addEventListener('click', async () => {
   currentPage += 1;
   showLoader();
 
@@ -99,9 +93,9 @@ loadButton.addEventListener('click', async () => {
         behavior: 'smooth',
       });
     }
-    const totalPages = Math.ceil(data.totalHits / perPage);
-    if (currentPage >= totalPages) {
-      hideLoadButton();
+
+    if (currentPage >= getTotalPages(data.totalHits, perPage)) {
+      hideLoadBtn();
       iziToast.info({
         title: 'Info',
         message: "We're sorry, but you've reached the end of search results.",
